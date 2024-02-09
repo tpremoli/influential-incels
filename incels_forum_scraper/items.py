@@ -16,9 +16,9 @@ class ThreadItem(scrapy.Item):
 
     url = scrapy.Field()
     post_date = scrapy.Field()
+    
     views = scrapy.Field()  # New field for thread views
-    likes = scrapy.Field()  # New field if threads can be liked or upvoted
-    tags = scrapy.Field()  # New field for thread tags or labels
+    tag = scrapy.Field()
 
 
 class CommentItem(scrapy.Item):
@@ -36,6 +36,6 @@ class CommentItem(scrapy.Item):
 class UserItem(scrapy.Item):
     user_id = scrapy.Field()
     username = scrapy.Field()
-    avatar_url = scrapy.Field()
+
     join_date = scrapy.Field()
     post_count = scrapy.Field()

@@ -65,6 +65,9 @@ ROBOTSTXT_OBEY = True
 #ITEM_PIPELINES = {
 #    "incels_forum_scraper.pipelines.IncelsForumScraperPipeline": 300,
 #}
+ITEM_PIPELINES = {
+    'incels_forum_scraper.pipelines.UserPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
