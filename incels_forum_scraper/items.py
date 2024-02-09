@@ -9,8 +9,8 @@ import scrapy
 class ThreadItem(scrapy.Item):
     post_id = scrapy.Field()
     
+    user_id = scrapy.Field()
     title = scrapy.Field()
-    author = scrapy.Field()
     comments = scrapy.Field()
     original_post_content = scrapy.Field()
     
@@ -23,9 +23,9 @@ class ThreadItem(scrapy.Item):
 
 class CommentItem(scrapy.Item):
     post_id = scrapy.Field()
+    
+    user_id = scrapy.Field()
     comment_text = scrapy.Field()
-    commenter_username = scrapy.Field()
-    commenter_user_title = scrapy.Field()
     comment_timestamp = scrapy.Field()
     
     reply_to_post_id = scrapy.Field()  # New field for tracking replies
@@ -33,3 +33,9 @@ class CommentItem(scrapy.Item):
     page_number = scrapy.Field()
 
 
+class UserItem(scrapy.Item):
+    user_id = scrapy.Field()
+    username = scrapy.Field()
+    avatar_url = scrapy.Field()
+    join_date = scrapy.Field()
+    post_count = scrapy.Field()
