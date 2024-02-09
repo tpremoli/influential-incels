@@ -65,7 +65,7 @@ class ForumSpider(scrapy.Spider):
                     '.avatar::attr(data-user-id)').get())
                 thread_item['post_date'] = first_post.css(
                     'time.u-dt::attr(datetime)').get()
-                thread_item['original_post_content'] = ' '.join(
+                thread_item['text_content'] = ' '.join(
                     first_post.css('.message-content ::text').getall()).strip()
 
                 #         "post_id": "post-13448716",
@@ -75,11 +75,11 @@ class ForumSpider(scrapy.Spider):
             else:
                 # Fallback or default values if the first post isn't found
                 thread_item['user_id'] = -1
-                thread_item['original_post_content'] = 'Content not found'
+                thread_item['text_content'] = 'Content not found'
         else:
             # For subsequent pages, do not include the original post content
-            thread_item['author'] = 'N/A'
-            thread_item['original_post_content'] = 'N/A'
+            thread_item['user_id'] = -1
+            thread_item['text_content'] = 'N/A'
 
         thread_item['comments'] = []
 
@@ -100,14 +100,14 @@ class ForumSpider(scrapy.Spider):
             # Convert back to a Selector for further processing
             comment_selector = scrapy.Selector(text=cleaned_html)
             # text and if it's a reply to another post
-            comment_item['comment_text'] = ' '.join(
+            comment_item['text_content'] = ' '.join(
                 comment_selector.css('.message-content ::text').getall()).strip()
             comment_item['reply_to_post_id'] = reply_to_post_ids[0] if reply_to_post_ids else None
 
             # post metadata
             comment_item['user_id'] = int(comment.css(
                 '.avatar::attr(data-user-id)').get())
-            comment_item['comment_timestamp'] = comment.css(
+            comment_item['post_date'] = comment.css(
                 'time.u-dt::attr(datetime)').get()
             comment_item['page_number'] = page_number
 

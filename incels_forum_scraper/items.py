@@ -8,12 +8,12 @@ import scrapy
 
 class ThreadItem(scrapy.Item):
     post_id = scrapy.Field()
-    
+
     user_id = scrapy.Field()
     title = scrapy.Field()
+    text_content = scrapy.Field()
     comments = scrapy.Field()
-    original_post_content = scrapy.Field()
-    
+
     url = scrapy.Field()
     post_date = scrapy.Field()
     views = scrapy.Field()  # New field for thread views
@@ -23,13 +23,13 @@ class ThreadItem(scrapy.Item):
 
 class CommentItem(scrapy.Item):
     post_id = scrapy.Field()
-    
+
     user_id = scrapy.Field()
-    comment_text = scrapy.Field()
-    comment_timestamp = scrapy.Field()
-    
+    text_content = scrapy.Field()
+    post_date = scrapy.Field()
+
     reply_to_post_id = scrapy.Field()  # New field for tracking replies
-    
+
     page_number = scrapy.Field()
 
 
