@@ -1,1 +1,1 @@
-scrapy crawl incelsis -o output.json
+scrapy crawl incelsis -o posts.json
