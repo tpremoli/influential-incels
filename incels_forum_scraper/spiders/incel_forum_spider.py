@@ -3,6 +3,7 @@ from incels_forum_scraper.items import ThreadItem, CommentItem, UserItem
 
 import re
 
+from datetime import datetime
 import re
 from html import unescape
 
@@ -30,18 +31,29 @@ class ForumSpider(scrapy.Spider):
     name = 'incelsis'
     allowed_domains = ['incels.is']
     start_urls = ['https://incels.is/forums/inceldom-discussion.2/']
-    
+
     def parse(self, response):
         # Extract thread URLs and iterate over them
         threads = response.css(
             'div.structItem--thread a[data-tp-primary="on"]::attr(href)').getall()
-        for thread in threads:
-            yield response.follow(thread, self.parse_thread)
+        for thread_url in threads:
+            yield response.follow(thread_url, self.check_thread_date)
 
         # Handle forum pagination if exists
         next_page = response.css('a.pageNav-jump--next::attr(href)').get()
         if next_page:
             yield response.follow(next_page, self.parse)
+
+    def check_thread_date(self, response):
+
+        # Example: Extract the thread start date (you'll need to adjust the selector based on actual page structure)
+        # Parse the date assuming the format is '2024-01-29T16:48:37-0500'
+        thread_datetime = response.css('a.u-concealed time::attr(datetime)').get()
+        thread_date = datetime.strptime(thread_datetime, "%Y-%m-%dT%H:%M:%S%z").date()
+
+        # Only process threads starting from 2023 onwards
+        if thread_date.year >= 2023:
+            yield from self.parse_thread(response)
 
     def parse_thread(self, response):
         thread_item = ThreadItem()
@@ -56,7 +68,7 @@ class ForumSpider(scrapy.Spider):
         else:
             page_number = int(response.url.split('/')[-1].split('-')[-1])
 
-        if is_first_page:            
+        if is_first_page:
             first_post = response.css('article.message--post').extract_first()
             if first_post:
                 first_post = response.css('article.message--post')[0]
@@ -72,9 +84,12 @@ class ForumSpider(scrapy.Spider):
                 thread_item['post_id'] = int(
                     first_post.xpath('@data-content').get()[5:])
 
-                username = first_post.css('.message-userDetails .message-name span::text').get()
-                join_date = first_post.css('.message-userExtras dt:contains("Joined") + dd::text').get()
-                post_count = first_post.css('.message-userExtras dt:contains("Posts") + dd::text').get()
+                username = first_post.css(
+                    '.message-userDetails .message-name span::text').get()
+                join_date = first_post.css(
+                    '.message-userExtras dt:contains("Joined") + dd::text').get()
+                post_count = first_post.css(
+                    '.message-userExtras dt:contains("Posts") + dd::text').get()
                 # saving user data
                 yield UserItem(
                     user_id=thread_item['user_id'],
@@ -102,7 +117,7 @@ class ForumSpider(scrapy.Spider):
             # Extracting post ID from each comment
             comment_item['post_id'] = int(
                 comment.xpath('@data-content').get()[5:])
-            
+
             # Removing quoted content before extracting text
             comment_html = comment.get()
             cleaned_html, reply_to_post_ids = extract_and_remove_quotes(
@@ -120,10 +135,13 @@ class ForumSpider(scrapy.Spider):
             comment_item['post_date'] = comment.css(
                 'time.u-dt::attr(datetime)').get()
             comment_item['page_number'] = page_number
-            
-            username = comment.css('.message-userDetails .message-name span::text').get()
-            join_date = comment.css('.message-userExtras dt:contains("Joined") + dd::text').get()
-            post_count = comment.css('.message-userExtras dt:contains("Posts") + dd::text').get()
+
+            username = comment.css(
+                '.message-userDetails .message-name span::text').get()
+            join_date = comment.css(
+                '.message-userExtras dt:contains("Joined") + dd::text').get()
+            post_count = comment.css(
+                '.message-userExtras dt:contains("Posts") + dd::text').get()
             # saving user data
             yield UserItem(
                 user_id=comment_item['user_id'],
@@ -145,4 +163,3 @@ class ForumSpider(scrapy.Spider):
         else:
             # If no next page, yield the completed thread item
             yield thread_item
-            
