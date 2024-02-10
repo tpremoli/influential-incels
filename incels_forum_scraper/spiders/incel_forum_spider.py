@@ -24,7 +24,7 @@ def extract_and_remove_quotes(html_text):
     # Convert HTML entities back to characters, if necessary
     cleaned_html = unescape(cleaned_html)
 
-    return cleaned_html, reply_to_post_ids
+    return cleaned_html, [int(reply) for reply in reply_to_post_ids]
 
 
 class ForumSpider(scrapy.Spider):
@@ -48,8 +48,10 @@ class ForumSpider(scrapy.Spider):
 
         # Example: Extract the thread start date (you'll need to adjust the selector based on actual page structure)
         # Parse the date assuming the format is '2024-01-29T16:48:37-0500'
-        thread_datetime = response.css('a.u-concealed time::attr(datetime)').get()
-        thread_date = datetime.strptime(thread_datetime, "%Y-%m-%dT%H:%M:%S%z").date()
+        thread_datetime = response.css(
+            'a.u-concealed time::attr(datetime)').get()
+        thread_date = datetime.strptime(
+            thread_datetime, "%Y-%m-%dT%H:%M:%S%z").date()
 
         # Only process threads starting from 2023 onwards
         if thread_date.year >= 2023:
@@ -127,7 +129,9 @@ class ForumSpider(scrapy.Spider):
             # text and if it's a reply to another post
             comment_item['text_content'] = ' '.join(
                 comment_selector.css('.message-content ::text').getall()).strip()
-            comment_item['reply_to_post_id'] = reply_to_post_ids[0] if reply_to_post_ids else None
+            
+            # we count a quote as a reply, otherwise we use the thread's post_id
+            comment_item['quoted_posts'] = reply_to_post_ids if reply_to_post_ids else []
 
             # post metadata
             comment_item['user_id'] = int(comment.css(

@@ -28,7 +28,7 @@ class CommentItem(scrapy.Item):
     text_content = scrapy.Field()
     post_date = scrapy.Field()
 
-    reply_to_post_id = scrapy.Field()  # New field for tracking replies
+    quoted_posts = scrapy.Field()  # New field for tracking replies
 
     page_number = scrapy.Field()
 
