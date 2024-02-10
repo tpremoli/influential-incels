@@ -92,12 +92,14 @@ class ForumSpider(scrapy.Spider):
                     '.message-userExtras dt:contains("Joined") + dd::text').get()
                 post_count = first_post.css(
                     '.message-userExtras dt:contains("Posts") + dd::text').get()
+                post_count_clean = re.sub(r'\D', '', post_count) if post_count else '0'
+                post_count_int = int(post_count_clean)
                 # saving user data
                 yield UserItem(
                     user_id=thread_item['user_id'],
                     username=username,
                     join_date=join_date,
-                    post_count=post_count
+                    post_count=post_count_int
                 )
             else:
                 # Fallback or default values if the first post isn't found
@@ -146,12 +148,13 @@ class ForumSpider(scrapy.Spider):
                 '.message-userExtras dt:contains("Joined") + dd::text').get()
             post_count = comment.css(
                 '.message-userExtras dt:contains("Posts") + dd::text').get()
-            # saving user data
+            post_count_clean = re.sub(r'\D', '', post_count) if post_count else '0'
+            post_count_int = int(post_count_clean)
             yield UserItem(
                 user_id=comment_item['user_id'],
                 username=username,
                 join_date=join_date,
-                post_count=post_count
+                post_count=post_count_int
             )
 
             thread_item['comments'].append(comment_item)
