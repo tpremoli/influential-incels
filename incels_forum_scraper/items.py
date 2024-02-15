@@ -17,8 +17,6 @@ class ThreadItem(scrapy.Item):
     url = scrapy.Field()
     post_date = scrapy.Field()
     
-    views = scrapy.Field()  # New field for thread views
-    tag = scrapy.Field()
 
 
 class CommentItem(scrapy.Item):

@@ -58,59 +58,58 @@ class ForumSpider(scrapy.Spider):
             yield from self.parse_thread(response)
 
     def parse_thread(self, response):
-        thread_item = ThreadItem()
-        thread_item['title'] = response.css('h1.p-title-value::text').get()
-        thread_item['url'] = response.url
-
-        # Check if the URL is for the first page of the thread
         is_first_page = not any(part.startswith('page-')
                                 for part in response.url.split('/'))
         if is_first_page:
             page_number = 1
         else:
             page_number = int(response.url.split('/')[-1].split('-')[-1])
-
-        if is_first_page:
-            first_post = response.css('article.message--post').extract_first()
-            if first_post:
-                first_post = response.css('article.message--post')[0]
-                # Adjust the selector based on the actual structure
-                thread_item['user_id'] = int(first_post.css(
-                    '.avatar::attr(data-user-id)').get())
-                thread_item['post_date'] = first_post.css(
-                    'time.u-dt::attr(datetime)').get()
-                thread_item['text_content'] = ' '.join(
-                    first_post.css('.message-content ::text').getall()).strip()
-
-                #         "post_id": "post-13448716",
-                thread_item['post_id'] = int(
-                    first_post.xpath('@data-content').get()[5:])
-
-                username = first_post.css(
-                    '.message-userDetails .message-name span::text').get()
-                join_date = first_post.css(
-                    '.message-userExtras dt:contains("Joined") + dd::text').get()
-                post_count = first_post.css(
-                    '.message-userExtras dt:contains("Posts") + dd::text').get()
-                post_count_clean = re.sub(r'\D', '', post_count) if post_count else '0'
-                post_count_int = int(post_count_clean)
-                # saving user data
-                yield UserItem(
-                    user_id=thread_item['user_id'],
-                    username=username,
-                    join_date=join_date,
-                    post_count=post_count_int
-                )
-            else:
-                # Fallback or default values if the first post isn't found
-                thread_item['user_id'] = -1
-                thread_item['text_content'] = 'Content not found'
+        
+        if 'thread_item' in response.meta:
+            thread_item = response.meta['thread_item']
         else:
-            # For subsequent pages, do not include the original post content
-            thread_item['user_id'] = -1
-            thread_item['text_content'] = 'N/A'
+            # We are on the first page, so initialize thread_item and its properties
+            thread_item = ThreadItem()
+            thread_item['title'] = response.css('h1.p-title-value::text').get().strip()
+            thread_item['url'] = response.url
+            thread_item['comments'] = []  # Initialize comments list here
+            
+            # Process the first post only if on the first page
+            if is_first_page:
+                first_post = response.css('article.message--post').extract_first()
+                if first_post:
+                    first_post = response.css('article.message--post')[0]
+                    # Adjust the selector based on the actual structure
+                    thread_item['user_id'] = int(first_post.css(
+                        '.avatar::attr(data-user-id)').get())
+                    thread_item['post_date'] = first_post.css(
+                        'time.u-dt::attr(datetime)').get()
+                    thread_item['text_content'] = ' '.join(
+                        first_post.css('.message-content ::text').getall()).strip()
 
-        thread_item['comments'] = []
+                    #         "post_id": "post-13448716",
+                    thread_item['post_id'] = int(
+                        first_post.xpath('@data-content').get()[5:])
+
+                    username = first_post.css(
+                        '.message-userDetails .message-name span::text').get()
+                    join_date = first_post.css(
+                        '.message-userExtras dt:contains("Joined") + dd::text').get()
+                    post_count = first_post.css(
+                        '.message-userExtras dt:contains("Posts") + dd::text').get()
+                    post_count_clean = re.sub(r'\D', '', post_count) if post_count else '0'
+                    post_count_int = int(post_count_clean)
+                    # saving user data
+                    yield UserItem(
+                        user_id=thread_item['user_id'],
+                        username=username,
+                        join_date=join_date,
+                        post_count=post_count_int
+                    )
+                else:
+                    # Fallback or default values if the first post isn't found
+                    thread_item['user_id'] = -1
+                    thread_item['text_content'] = 'Content not found'
 
         # For the first page, skip the first post when scraping comments
         # For other pages, scrape all posts as comments
@@ -159,14 +158,12 @@ class ForumSpider(scrapy.Spider):
 
             thread_item['comments'].append(comment_item)
 
-        # Handle pagination and pass along the thread_item as before
+        # Handle pagination and pass along the thread_item
         next_page = response.css('a.pageNav-jump--next::attr(href)').get()
         if next_page:
-            request = response.follow(next_page, self.parse_thread)
-            # Pass the thread_item through meta only if it's the first page
-            if is_first_page:
-                request.meta['thread_item'] = thread_item
+            request = response.follow(next_page, callback=self.parse_thread)
+            request.meta['thread_item'] = thread_item  # Pass the thread_item for continuity
             yield request
         else:
-            # If no next page, yield the completed thread item
+            # Finalize and yield the thread_item if there's no next page
             yield thread_item
