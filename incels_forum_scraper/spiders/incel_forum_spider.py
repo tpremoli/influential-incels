@@ -26,6 +26,19 @@ def extract_and_remove_quotes(html_text):
 
     return cleaned_html, [int(reply) for reply in reply_to_post_ids]
 
+def get_mentioned_user_ids(html_text):
+    # Regular expression to find occurrences of mentioned user IDs
+    # This looks for the pattern where `data-username` is used with `@` in the `data-username` attribute
+    mentioned_user_id_pattern = re.compile(r'<span class="username" data-user-id="(\d+)" data-username="@[^"]+">')
+    
+    # Find all matches of the pattern in the HTML text
+    matches = mentioned_user_id_pattern.findall(html_text)
+    
+    # Convert all found user IDs from strings to integers
+    mentioned_user_ids = [int(user_id) for user_id in matches]
+    
+    return mentioned_user_ids
+
 
 class ForumSpider(scrapy.Spider):
     name = 'incelsis'
@@ -73,6 +86,7 @@ class ForumSpider(scrapy.Spider):
             thread_item['title'] = response.css('h1.p-title-value::text').get().strip()
             thread_item['url'] = response.url
             thread_item['comments'] = []  # Initialize comments list here
+            thread_item['mentioned_users'] = []  # Initialize mentioned_users
             
             # Process the first post only if on the first page
             if is_first_page:
@@ -99,6 +113,9 @@ class ForumSpider(scrapy.Spider):
                         '.message-userExtras dt:contains("Posts") + dd::text').get()
                     post_count_clean = re.sub(r'\D', '', post_count) if post_count else '0'
                     post_count_int = int(post_count_clean)
+                    
+                    thread_item['mentioned_users'] = get_mentioned_user_ids(first_post.get())
+                    
                     # saving user data
                     yield UserItem(
                         user_id=thread_item['user_id'],
@@ -106,10 +123,6 @@ class ForumSpider(scrapy.Spider):
                         join_date=join_date,
                         post_count=post_count_int
                     )
-                else:
-                    # Fallback or default values if the first post isn't found
-                    thread_item['user_id'] = -1
-                    thread_item['text_content'] = 'Content not found'
 
         # For the first page, skip the first post when scraping comments
         # For other pages, scrape all posts as comments
@@ -140,6 +153,8 @@ class ForumSpider(scrapy.Spider):
             comment_item['post_date'] = comment.css(
                 'time.u-dt::attr(datetime)').get()
             comment_item['page_number'] = page_number
+            
+            comment_item['mentioned_users'] = get_mentioned_user_ids(comment_html)
 
             username = comment.css(
                 '.message-userDetails .message-name span::text').get()

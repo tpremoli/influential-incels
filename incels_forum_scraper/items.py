@@ -13,6 +13,7 @@ class ThreadItem(scrapy.Item):
     title = scrapy.Field()
     text_content = scrapy.Field()
     comments = scrapy.Field()
+    mentioned_users= scrapy.Field()
 
     url = scrapy.Field()
     post_date = scrapy.Field()
@@ -27,6 +28,7 @@ class CommentItem(scrapy.Item):
     post_date = scrapy.Field()
 
     quoted_posts = scrapy.Field()  # New field for tracking replies
+    mentioned_users = scrapy.Field()  # New field for tracking mentions
 
     page_number = scrapy.Field()
 
