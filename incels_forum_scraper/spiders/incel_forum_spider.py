@@ -69,6 +69,9 @@ class ForumSpider(scrapy.Spider):
         # Only process threads starting from 2023 onwards
         if thread_date.year >= 2023:
             yield from self.parse_thread(response)
+        else:
+            self.log(
+                f'Skipping thread {response.url} as it is older than 2023')
 
     def parse_thread(self, response):
         is_first_page = not any(part.startswith('page-')
