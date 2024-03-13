@@ -4,6 +4,8 @@ import pickle
 import os
 from tqdm import tqdm
 
+from transformers import pipeline
+
 def calculate_graph(users, posts):
     # Initialize a directed graph
     incel_graph = nx.DiGraph()
@@ -49,48 +51,48 @@ def calculate_graph(users, posts):
     
     return incel_graph
 
-def compare_top_n_emotions(N):
+def get_mean_emotion_score(emotion_probs):
+    # Apply threshold and calculate the mean of the probabilities
+    filtered_probs = [prob for prob in emotion_probs if prob >= 0.5]
+    if not filtered_probs:  # If no emotions exceed the threshold, consider all for the mean
+        return sum(emotion_probs) / len(emotion_probs)
+    return sum(filtered_probs) / len(filtered_probs)
+
+def compare_top_n_emotions(N, pagerank, users,posts):
+    roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
+
     top_n_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:N]
     top_n_user_ids = [user[0] for user in top_n_users]
 
     # Initialize dictionaries to store sentiment scores
-    top_user_sentiments = []
-    other_user_sentiments = []
+    top_user_mean_scores = []
+    other_user_mean_scores = []
 
-    # Step 2 & 3: Classify sentiment of posts and aggregate scores
     for post in posts:
-        # Determine if the post is by a top user or not
+        # Analyze the post's text sentiment
+        post_emotions = roberta(post['text_content'])
+        post_mean_score = get_mean_emotion_score(post_emotions)
+        
         if post['user_id'] in top_n_user_ids:
-            sentiment = my_roberta(post['text_content'])
-            top_user_sentiments.append(sentiment)
+            top_user_mean_scores.append(post_mean_score)
         else:
-            sentiment = my_roberta(post['text_content'])
-            other_user_sentiments.append(sentiment)
+            other_user_mean_scores.append(post_mean_score)
 
-        # Also consider the sentiments in the comments
+        # Analyze sentiments in the comments
         for comment in post['comments']:
+            comment_emotions = roberta(comment['text_content'])
+            comment_mean_score = get_mean_emotion_score(comment_emotions)
+
             if comment['user_id'] in top_n_user_ids:
-                sentiment = my_roberta(comment['text_content'])
-                top_user_sentiments.append(sentiment)
+                top_user_mean_scores.append(comment_mean_score)
             else:
-                sentiment = my_roberta(comment['text_content'])
-                other_user_sentiments.append(sentiment)
+                other_user_mean_scores.append(comment_mean_score)
+                
+    avg_top_user_score = sum(top_user_mean_scores) / len(top_user_mean_scores) if top_user_mean_scores else 0
+    avg_other_user_score = sum(other_user_mean_scores) / len(other_user_mean_scores) if other_user_mean_scores else 0
 
-    # Step 4: Compare sentiments
-    # Here, you would calculate the average sentiment for each group or conduct a more nuanced analysis
-    # depending on the output format of `my_roberta` (e.g., mean sentiment score, distribution of sentiment categories)
-
-    # Example placeholder function to calculate average sentiment (you'll need to adapt this based on your sentiment score structure)
-    def calculate_average_sentiment(sentiments):
-        # Implement your logic to calculate the average sentiment
-        return sum(sentiments) / len(sentiments)
-
-    avg_top_user_sentiment = calculate_average_sentiment(top_user_sentiments)
-    avg_other_user_sentiment = calculate_average_sentiment(other_user_sentiments)
-
-    # Compare the average sentiment values or distributions
-    print("Average Sentiment of Top Users:", avg_top_user_sentiment)
-    print("Average Sentiment of Other Users:", avg_other_user_sentiment)
+    print("Average Emotion Score of Top Users:", avg_top_user_score)
+    print("Average Emotion Score of Other Users:", avg_other_user_score)
 
 if __name__ == "__main__":
     # Load the JSON data
@@ -125,4 +127,4 @@ if __name__ == "__main__":
         print(f"User ID: {user_id}, Score: {score}")
         
     print("calculating and comparing sentiments")
-    compare_top_n_emotions(10)
+    compare_top_n_emotions(10, pagerank,users,posts)
