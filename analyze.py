@@ -5,6 +5,7 @@ import os
 from tqdm import tqdm
 
 import pandas as pd
+import torch
 from transformers import pipeline
 
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
@@ -81,7 +82,9 @@ def get_weighted_mean_emotion_score(chunks, model):
     return weighted_scores
 
 def compare_top_n_emotions(N, pagerank, users, posts):
-    roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
 
     top_n_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:N]
     top_n_user_ids = [user[0] for user in top_n_users]
