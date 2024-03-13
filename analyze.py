@@ -57,16 +57,24 @@ def split_text(text, max_length):
 
 def get_weighted_mean_emotion_score(chunks, model):
     total_length = sum(len(chunk) for chunk in chunks)
-    weighted_scores = [0] * 28  # Initialize a list of zeros for 28 emotion labels
+    
+    # Initialize a dictionary for emotion labels with initial score of 0
+    emotions = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
+                "disappointment", "disapproval", "confusion", "desire", "excitement",
+                "gratitude", "joy", "disgust", "embarrassment", "fear", "grief",
+                "curiosity", "love", "optimism", "pride", "relief", "nervousness",
+                "remorse", "sadness", "realization", "surprise", "neutral"]
+    weighted_scores = {emotion: 0 for emotion in emotions}
 
     for chunk in chunks:
-        chunk_scores = model(chunk)  # This returns a list of dictionaries
+        chunk_scores = model(chunk)  # This returns a list of dictionaries for each chunk
         weight = len(chunk) / total_length
 
-        for score_dict in chunk_scores:
-            # Assuming the model returns a 'label' key that corresponds to the emotion index
-            label_index = int(score_dict['label'].split('_')[-1])  # Extract index from label (e.g., 'LABEL_0' -> 0)
-            weighted_scores[label_index] += score_dict['score'] * weight
+        for score_dict in chunk_scores[0]:  # chunk_scores[0] contains our list of dictionaries
+            emotion = score_dict['label']
+            score = score_dict['score']
+            if emotion in weighted_scores:
+                weighted_scores[emotion] += score * weight
 
     return weighted_scores
 
