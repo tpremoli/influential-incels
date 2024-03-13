@@ -1,5 +1,6 @@
 import json
 import networkx as nx
+import pickle
 from tqdm import tqdm
 
 # Load the JSON data
@@ -49,6 +50,10 @@ for post in tqdm(posts, desc="Processing posts"):
         if not has_direct_interaction and comment['user_id'] != post['user_id']:
             G.add_edge(comment['user_id'], post['user_id'], weight=general_comment_weight)
 
+print("graph calculation complete. Saving to file")
+with open('forum_graph.pkl', 'wb') as f:
+    pickle.dump(G, f)
+
 # Apply the PageRank algorithm
 print("applying pagerank algorithm to graph")
 pagerank = nx.pagerank(G, weight='weight')
@@ -61,3 +66,4 @@ sorted_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)
 print("Analysis complete. Top 10 users:")
 for user_id, score in sorted_users[:10]:
     print(f"User ID: {user_id}, Score: {score}")
+    
