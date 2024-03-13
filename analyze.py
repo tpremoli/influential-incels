@@ -29,6 +29,14 @@ for post in tqdm(posts, desc="Processing posts"):
 
     # Add edges for each comment
     for comment in post['comments']:
+        # if we don't mention or quote anyone, we consider it an interaction with the original user
+        # NOTE: we'll evaluate if we want to do this. Maybe include different weights for
+        # general comments vs direct interactions?
+        if not comment['mentioned_users'] and not comment['quoted_posts']:
+            if comment['user_id'] != post['user_id']:
+                G.add_edge(comment['user_id'], post['user_id'])
+            continue
+        
         # If the comment mentions other users
         if comment['mentioned_users']:
             for mentioned_user in comment['mentioned_users']:
