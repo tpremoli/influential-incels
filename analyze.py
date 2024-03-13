@@ -7,6 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 import torch
 from transformers import pipeline
+from transformers import AutoTokenizer
 
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
             "disappointment", "disapproval", "confusion", "desire", "excitement",
@@ -60,8 +61,10 @@ def calculate_graph(users, posts):
     
     return incel_graph
 
-def split_text(text, max_length):
-    return [text[i:i+max_length] for i in range(0, len(text), max_length)]
+def split_text_to_tokens(text, tokenizer, max_length):
+    # Tokenize the text and split it into chunks of max_length tokens
+    tokens = tokenizer(text, add_special_tokens=False, truncation=False)['input_ids']
+    return [tokens[i:i + max_length] for i in range(0, len(tokens), max_length)]
 
 def get_weighted_mean_emotion_score(chunks, model):
     total_length = sum(len(chunk) for chunk in chunks)
@@ -83,8 +86,9 @@ def get_weighted_mean_emotion_score(chunks, model):
 
 def compare_top_n_emotions(N, pagerank, users, posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
+    tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
 
     top_n_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:N]
     top_n_user_ids = [user[0] for user in top_n_users]
@@ -93,7 +97,7 @@ def compare_top_n_emotions(N, pagerank, users, posts):
 
     for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
-        post_chunks = split_text(post['text_content'], 512)
+        post_chunks = split_text_to_tokens(post['text_content'], tokenizer, 512)
         post_mean_score = get_weighted_mean_emotion_score(post_chunks, roberta)
         
         # Ensure the order of scores matches the order of emotions
@@ -102,7 +106,7 @@ def compare_top_n_emotions(N, pagerank, users, posts):
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
-            comment_chunks = split_text(comment['text_content'], 512)
+            comment_chunks = split_text_to_tokens(comment['text_content'], tokenizer, 512)
             comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, roberta)
 
             # Ensure the order of scores matches the order of emotions
