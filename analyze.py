@@ -4,6 +4,7 @@ import pickle
 import os
 from tqdm import tqdm
 
+import pandas as pd
 from transformers import pipeline
 
 def calculate_graph(users, posts):
@@ -51,49 +52,53 @@ def calculate_graph(users, posts):
     
     return incel_graph
 
-def get_mean_emotion_score(emotion_probs):
-    # Apply threshold and calculate the mean of the probabilities
-    filtered_probs = [prob for prob in emotion_probs if prob >= 0.5]
-    if not filtered_probs:  # If no emotions exceed the threshold, consider all for the mean
-        return sum(emotion_probs) / len(emotion_probs)
-    return sum(filtered_probs) / len(filtered_probs)
+def split_text(text, max_length):
+    return [text[i:i+max_length] for i in range(0, len(text), max_length)]
 
-def compare_top_n_emotions(N, pagerank, users,posts):
+def get_weighted_mean_emotion_score(chunks, model):
+    total_length = sum(len(chunk) for chunk in chunks)
+    weighted_scores = [0] * 28  # Initialize a list of zeros for 28 emotion labels
+
+    for chunk in chunks:
+        chunk_scores = model(chunk)  # This returns a list of dictionaries
+        weight = len(chunk) / total_length
+
+        for score_dict in chunk_scores:
+            # Assuming the model returns a 'label' key that corresponds to the emotion index
+            label_index = int(score_dict['label'].split('_')[-1])  # Extract index from label (e.g., 'LABEL_0' -> 0)
+            weighted_scores[label_index] += score_dict['score'] * weight
+
+    return weighted_scores
+
+def compare_top_n_emotions(N, pagerank, users, posts):
     roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None)
 
     top_n_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:N]
     top_n_user_ids = [user[0] for user in top_n_users]
 
-    # Initialize dictionaries to store sentiment scores
-    top_user_mean_scores = []
-    other_user_mean_scores = []
+    rows = []
 
     for post in posts:
-        # Analyze the post's text sentiment
-        post_emotions = roberta(post['text_content'])
-        post_mean_score = get_mean_emotion_score(post_emotions)
+        # Split and analyze the post's text sentiment
+        post_chunks = split_text(post['text_content'], 512)
+        post_mean_score = get_weighted_mean_emotion_score(post_chunks, roberta)
         
-        if post['user_id'] in top_n_user_ids:
-            top_user_mean_scores.append(post_mean_score)
-        else:
-            other_user_mean_scores.append(post_mean_score)
+        rows.append([post['post_id'], post['user_id']] + post_mean_score)
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
-            comment_emotions = roberta(comment['text_content'])
-            comment_mean_score = get_mean_emotion_score(comment_emotions)
+            comment_chunks = split_text(comment['text_content'], 512)
+            comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, roberta)
 
-            if comment['user_id'] in top_n_user_ids:
-                top_user_mean_scores.append(comment_mean_score)
-            else:
-                other_user_mean_scores.append(comment_mean_score)
-                
-    avg_top_user_score = sum(top_user_mean_scores) / len(top_user_mean_scores) if top_user_mean_scores else 0
-    avg_other_user_score = sum(other_user_mean_scores) / len(other_user_mean_scores) if other_user_mean_scores else 0
+            rows.append([comment['post_id'], comment['user_id']] + comment_mean_score)
 
-    print("Average Emotion Score of Top Users:", avg_top_user_score)
-    print("Average Emotion Score of Other Users:", avg_other_user_score)
-
+    # Save to CSV
+    columns = ['post_id', 'user_id'] + [f'sentiment{i+1}' for i in range(28)]
+    df = pd.DataFrame(rows, columns=columns)
+    df.to_csv('sentiment_analysis.csv', index=False)
+    
+    # TODO: get aggregate data
+    
 if __name__ == "__main__":
     # Load the JSON data
     print("loading users")
