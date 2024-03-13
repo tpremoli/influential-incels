@@ -1,6 +1,7 @@
 import json
 import networkx as nx
 import pickle
+import os
 from tqdm import tqdm
 
 def calculate_graph():
@@ -59,8 +60,15 @@ def calculate_graph():
 
 
 if __name__ == "__main__":
-    incel_graph = calculate_graph()
-
+    # check if forum_graph.pkl exists, if so load it, else calculate it
+    if os.path.exists('forum_graph.pkl'):
+        print("Loading graph from file...")
+        with open('forum_graph.pkl', 'rb') as f:
+            incel_graph = pickle.load(f)
+    else:
+        print("Calculating graph...")
+        incel_graph = calculate_graph()
+        
     # Apply the PageRank algorithm
     print("applying pagerank algorithm to graph")
     pagerank = nx.pagerank(incel_graph, weight='weight')
