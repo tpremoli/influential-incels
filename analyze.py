@@ -7,6 +7,13 @@ from tqdm import tqdm
 import pandas as pd
 from transformers import pipeline
 
+EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
+            "disappointment", "disapproval", "confusion", "desire", "excitement",
+            "gratitude", "joy", "disgust", "embarrassment", "fear", "grief",
+            "curiosity", "love", "optimism", "pride", "relief", "nervousness",
+            "remorse", "sadness", "realization", "surprise", "neutral"]
+
+
 def calculate_graph(users, posts):
     # Initialize a directed graph
     incel_graph = nx.DiGraph()
@@ -59,12 +66,7 @@ def get_weighted_mean_emotion_score(chunks, model):
     total_length = sum(len(chunk) for chunk in chunks)
     
     # Initialize a dictionary for emotion labels with initial score of 0
-    emotions = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
-                "disappointment", "disapproval", "confusion", "desire", "excitement",
-                "gratitude", "joy", "disgust", "embarrassment", "fear", "grief",
-                "curiosity", "love", "optimism", "pride", "relief", "nervousness",
-                "remorse", "sadness", "realization", "surprise", "neutral"]
-    weighted_scores = {emotion: 0 for emotion in emotions}
+    weighted_scores = {emotion: 0 for emotion in EMOTIONS}
 
     for chunk in chunks:
         chunk_scores = model(chunk)  # This returns a list of dictionaries for each chunk
@@ -86,22 +88,26 @@ def compare_top_n_emotions(N, pagerank, users, posts):
 
     rows = []
 
-    for post in posts:
+    for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
         post_chunks = split_text(post['text_content'], 512)
         post_mean_score = get_weighted_mean_emotion_score(post_chunks, roberta)
         
-        rows.append([post['post_id'], post['user_id']] + post_mean_score)
+        # Ensure the order of scores matches the order of emotions
+        post_scores = [post_mean_score[emotion] for emotion in EMOTIONS]
+        rows.append([post['post_id'], post['user_id']] + post_scores)
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
             comment_chunks = split_text(comment['text_content'], 512)
             comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, roberta)
 
-            rows.append([comment['post_id'], comment['user_id']] + comment_mean_score)
+            # Ensure the order of scores matches the order of emotions
+            comment_scores = [comment_mean_score[emotion] for emotion in EMOTIONS]
+            rows.append([comment['post_id'], comment['user_id']] + comment_scores)
 
     # Save to CSV
-    columns = ['post_id', 'user_id'] + [f'sentiment{i+1}' for i in range(28)]
+    columns = ['post_id', 'user_id'] + [emotion + "_score" for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis.csv', index=False)
     
