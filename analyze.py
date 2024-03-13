@@ -1,5 +1,6 @@
 import json
 import networkx as nx
+from tqdm import tqdm
 
 # Load the JSON data
 print("loading users")
@@ -15,12 +16,12 @@ G = nx.DiGraph()
 
 # Add nodes (users) to the graph
 print("adding users (nodes) to graph")
-for user in users:
+for user in tqdm(users, desc="Processing users"):
     G.add_node(user['user_id'], username=user['username'])
 
 # Add edges (interactions) to the graph
 print("adding edges (interactions) to graph")
-for post in posts:
+for post in tqdm(posts, desc="Processing posts"):
     # Add an edge for the post itself (if the author is replying to someone)
     if post['mentioned_users']:
         for mentioned_user in post['mentioned_users']:
