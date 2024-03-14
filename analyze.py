@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 import pandas as pd
 import torch
+from transformers import AutoTokenizer
 from transformers import pipeline
 
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
@@ -60,8 +61,21 @@ def calculate_graph(users, posts):
     
     return incel_graph
 
+tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
+
 def split_text(text, max_length):
-    return [text[i:i+max_length] for i in range(0, len(text), max_length)]
+    # Tokenize the text and get the tokens
+    tokens = tokenizer.tokenize(text)
+    
+    # Initialize chunks
+    chunks = []
+
+    for i in range(0, len(tokens), max_length - 2):  # Adjust for special tokens
+        # Convert tokens back to text
+        chunk = tokenizer.convert_tokens_to_string(tokens[i:i + max_length - 2])
+        chunks.append(chunk)
+    
+    return chunks
 
 def get_weighted_mean_emotion_score(chunks, model):
     total_length = sum(len(chunk) for chunk in chunks)
@@ -71,7 +85,7 @@ def get_weighted_mean_emotion_score(chunks, model):
 
     for chunk in chunks:
         chunk_scores = model(chunk)  # This returns a list of dictionaries for each chunk
-        weight = len(chunk) / total_length
+        weight = len(tokenizer.tokenize(chunk)) / total_length  # Update the weight calculation based on tokens
 
         for score_dict in chunk_scores[0]:  # chunk_scores[0] contains our list of dictionaries
             emotion = score_dict['label']
