@@ -1,5 +1,6 @@
 import pandas as pd
 import networkx as nx
+import numpy as np
 import pickle
 
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
@@ -57,3 +58,33 @@ if __name__ == "__main__":
 
     print("\nVariance in sentiment scores across all users:")
     print(emotion_variance)
+        
+    print("running confidence interval analysis...")
+    # Number of bootstrap samples
+    n_bootstraps = 1000
+
+    # Initialize dictionaries to hold the bootstrap results
+    top_10_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
+    other_users_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
+
+    # Bootstrap for top 10 users
+    for _ in range(n_bootstraps):
+        sample = df[df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
+        for emotion in EMOTIONS:
+            top_10_bootstrap_means[emotion].append(sample[emotion].mean())
+
+    # Bootstrap for other users
+    for _ in range(n_bootstraps):
+        sample = df[~df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
+        for emotion in EMOTIONS:
+            other_users_bootstrap_means[emotion].append(sample[emotion].mean())
+
+    # Calculate the confidence intervals
+    confidence_intervals = {
+        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [2.5, 97.5]) for emotion in EMOTIONS},
+        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [2.5, 97.5]) for emotion in EMOTIONS}
+    }
+
+    # Display the confidence intervals
+    for emotion in EMOTIONS:
+        print(f"{emotion}:\nTop 10 Users: {confidence_intervals['Top 10 Users'][emotion]}\nOther Users: {confidence_intervals['Other Users'][emotion]}\n")
