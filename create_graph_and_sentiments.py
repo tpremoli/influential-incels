@@ -16,7 +16,7 @@ EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance
             "remorse", "sadness", "realization", "surprise", "neutral"]
 
 
-def calculate_graph(users, posts):
+def create_graph(users, posts):
     # Initialize a directed graph
     incel_graph = nx.DiGraph()
 
@@ -95,13 +95,10 @@ def get_weighted_mean_emotion_score(chunks, model):
 
     return weighted_scores
 
-def compare_top_n_emotions(N, pagerank, users, posts):
+def calc_sentiments(posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
-
-    top_n_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:N]
-    top_n_user_ids = [user[0] for user in top_n_users]
 
     rows = []
 
@@ -145,20 +142,7 @@ if __name__ == "__main__":
             incel_graph = pickle.load(f)
     else:
         print("Calculating graph...")
-        incel_graph = calculate_graph(users,posts)
-        
-    # Apply the PageRank algorithm
-    print("applying pagerank algorithm to graph")
-    pagerank = nx.pagerank(incel_graph, weight='weight')
-
-    # Sort users by their PageRank scores
-    print("sorting users by pagerank scores")
-    sorted_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)
-
-    # Display the top 10 influential users
-    print("Network analysis complete. Top 10 users:")
-    for user_id, score in sorted_users[:10]:
-        print(f"User ID: {user_id}, Score: {score}")
-        
-    print("calculating and comparing sentiments")
-    compare_top_n_emotions(10, pagerank,users,posts)
+        incel_graph = create_graph(users,posts)
+                
+    print("calculating sentiments")
+    calc_sentiments(posts)
