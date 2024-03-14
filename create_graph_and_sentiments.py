@@ -120,8 +120,8 @@ def calc_sentiments(posts):
             comment_scores = [comment_mean_score[emotion] for emotion in EMOTIONS]
             rows.append([comment['post_id'], comment['user_id']] + comment_scores)
 
-    # Save to CSV
-    columns = ['post_id', 'user_id'] + [emotion + "_score" for emotion in EMOTIONS]
+    # Save to CSV TODO: maybe add post length column?
+    columns = ['post_id', 'user_id'] + [emotion for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis.csv', index=False)
     
