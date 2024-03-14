@@ -2,6 +2,7 @@ import pandas as pd
 import networkx as nx
 import numpy as np
 import pickle
+from scipy import stats
 
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
             "disappointment", "disapproval", "confusion", "desire", "excitement",
@@ -79,12 +80,56 @@ if __name__ == "__main__":
         for emotion in EMOTIONS:
             other_users_bootstrap_means[emotion].append(sample[emotion].mean())
 
+    print("95% confidence intervals for the average sentiment scores:")
     # Calculate the confidence intervals
     confidence_intervals = {
-        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [2.5, 97.5]) for emotion in EMOTIONS},
-        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [2.5, 97.5]) for emotion in EMOTIONS}
+        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS},
+        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS}
     }
 
     # Display the confidence intervals
     for emotion in EMOTIONS:
         print(f"{emotion}:\nTop 10 Users: {confidence_intervals['Top 10 Users'][emotion]}\nOther Users: {confidence_intervals['Other Users'][emotion]}\n")
+        
+    print("checking statistical significance of means...")
+    comparison_results = []
+
+    for emotion in EMOTIONS:
+        # Extract the emotion scores for top 5 users and other users
+        top_10_scores = df[df['user_id'].isin(top_10_user_ids)][emotion]
+        other_users_scores = df[~df['user_id'].isin(top_10_user_ids)][emotion]
+
+        # Calculate the averages
+        top_10_avg = top_10_scores.mean()
+        other_users_avg = other_users_scores.mean()
+
+        # Calculate the difference
+        difference = top_10_avg - other_users_avg
+
+        # Perform Levene's test for equality of variances
+        levene_test = stats.levene(top_10_scores, other_users_scores)
+
+        # Perform the t-test based on the variances
+        if levene_test.pvalue < 0.05:
+            t_test_result = stats.ttest_ind(top_10_scores, other_users_scores, equal_var=False)
+        else:
+            t_test_result = stats.ttest_ind(top_10_scores, other_users_scores, equal_var=True)
+
+        # Determine if the result is statistically significant (using p < 0.05 as the criterion)
+        is_significant = t_test_result.pvalue < 0.05
+
+        # Append the results to the DataFrame
+        comparison_results.append({
+            'Emotion': emotion,
+            'Top 10 Users': top_10_avg,
+            'Other Users': other_users_avg,
+            'Difference': difference,
+            'Is Significant': is_significant
+        })
+
+    # Convert the results list to a DataFrame
+    comparison_df = pd.DataFrame(comparison_results)
+
+    # Display the results
+    print(comparison_df)
+    
