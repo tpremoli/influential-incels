@@ -128,8 +128,6 @@ def compare_top_n_emotions(N, pagerank, users, posts):
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis.csv', index=False)
     
-    # TODO: get aggregate data
-    
 if __name__ == "__main__":
     # Load the JSON data
     print("loading users")
