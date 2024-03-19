@@ -69,7 +69,7 @@ def avgs_per_decile(sorted_users, df, emotions):
     
     print("plotting")
     # Plotting
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(16, 8))
     for emotion in emotions:
         if emotion == "neutral": continue
         plt.plot(range(1, 11), decile_averages_df[emotion], marker='o', label=emotion)
@@ -78,7 +78,13 @@ def avgs_per_decile(sorted_users, df, emotions):
     plt.xlabel('Decile')
     plt.ylabel('Average Score')
     plt.xticks(range(1, 11), [f'{i*10}%' for i in range(1, 11)])
-    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
+    
+    # Adjust the legend position
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    # Improve layout to prevent overlap and ensure everything fits
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    
     plt.grid(True)
     plt.savefig("deciles.png")
 
@@ -103,6 +109,10 @@ if __name__ == "__main__":
     print("loading sentiment files...")
     df = pd.read_csv('sentiment_analysis.csv')
     
+    # Clamp emotion values
+    for emotion in EMOTIONS:
+        df[emotion] = df[emotion].apply(lambda x: 0 if x < 0.5 else 1)
+            
     # Get the top 10 users based on PageRank
     top_10_user_ids = [user[0] for user in sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:10]]
 
