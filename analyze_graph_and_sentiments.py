@@ -4,11 +4,83 @@ import numpy as np
 import pickle
 from scipy import stats
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance",
             "disappointment", "disapproval", "confusion", "desire", "excitement",
             "gratitude", "joy", "disgust", "embarrassment", "fear", "grief",
             "curiosity", "love", "optimism", "pride", "relief", "nervousness",
             "remorse", "sadness", "realization", "surprise", "neutral"]
+
+def conf_interval_analysis(df, top_10_user_ids, n_bootstraps=1000):
+    # Initialize dictionaries to hold the bootstrap results
+    top_10_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
+    other_users_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
+
+    # Bootstrap for top 10 users
+    for _ in range(n_bootstraps):
+        sample = df[df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
+        for emotion in EMOTIONS:
+            top_10_bootstrap_means[emotion].append(sample[emotion].mean())
+
+    # Bootstrap for other users
+    for _ in range(n_bootstraps):
+        sample = df[~df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
+        for emotion in EMOTIONS:
+            other_users_bootstrap_means[emotion].append(sample[emotion].mean())
+
+    print("95% confidence intervals for the average sentiment scores:")
+    # Calculate the confidence intervals
+    confidence_intervals = {
+        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS},
+        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS}
+    }
+
+    # Display the confidence intervals
+    for emotion in EMOTIONS:
+        print(f"{emotion}:\nTop 10 Users: {confidence_intervals['Top 10 Users'][emotion]}\nOther Users: {confidence_intervals['Other Users'][emotion]}\n")
+
+def avgs_per_decile(sorted_users, df, emotions):
+    # Determine the number of users in each decile
+    num_users = len(sorted_users)
+    decile_size = num_users // 10
+    
+    # Initialize a list to store the average sentiment scores for each decile
+    decile_averages = []
+    
+    # Calculate the average sentiment scores for each decile
+    for i in range(10):
+        print("looking at decile",i)
+        start_idx = i * decile_size
+        end_idx = start_idx + decile_size if i < 9 else num_users  # Ensure all users are included in the last decile
+        
+        # Get the user IDs for the current decile
+        decile_user_ids = [user[0] for user in sorted_users[start_idx:end_idx]]
+        
+        # Calculate the average sentiment scores for the current decile
+        decile_avg = df[df['user_id'].isin(decile_user_ids)][emotions].mean()
+        
+        # Add the averages to the list
+        decile_averages.append(decile_avg)
+
+    # Convert the list of averages to a DataFrame for easier plotting
+    decile_averages_df = pd.DataFrame(decile_averages)
+    
+    print("plotting")
+    # Plotting
+    plt.figure(figsize=(10, 8))
+    for emotion in emotions:
+        if emotion == "neutral": continue
+        plt.plot(range(1, 11), decile_averages_df[emotion], marker='o', label=emotion)
+    
+    plt.title('Average Sentiment Scores by Decile')
+    plt.xlabel('Decile')
+    plt.ylabel('Average Score')
+    plt.xticks(range(1, 11), [f'{i*10}%' for i in range(1, 11)])
+    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
+    plt.grid(True)
+    plt.savefig("deciles.png")
 
 if __name__ == "__main__":
     print("Loading graph from file...")
@@ -60,36 +132,11 @@ if __name__ == "__main__":
     print("\nVariance in sentiment scores across all users:")
     print(emotion_variance)
         
-    print("running confidence interval analysis...")
-    # Number of bootstrap samples
-    n_bootstraps = 1000
-
-    # Initialize dictionaries to hold the bootstrap results
-    top_10_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
-    other_users_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
-
-    # Bootstrap for top 10 users
-    for _ in range(n_bootstraps):
-        sample = df[df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
-        for emotion in EMOTIONS:
-            top_10_bootstrap_means[emotion].append(sample[emotion].mean())
-
-    # Bootstrap for other users
-    for _ in range(n_bootstraps):
-        sample = df[~df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
-        for emotion in EMOTIONS:
-            other_users_bootstrap_means[emotion].append(sample[emotion].mean())
-
-    print("95% confidence intervals for the average sentiment scores:")
-    # Calculate the confidence intervals
-    confidence_intervals = {
-        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS},
-        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS}
-    }
-
-    # Display the confidence intervals
-    for emotion in EMOTIONS:
-        print(f"{emotion}:\nTop 10 Users: {confidence_intervals['Top 10 Users'][emotion]}\nOther Users: {confidence_intervals['Other Users'][emotion]}\n")
+    # print("running confidence interval analysis...")
+    # conf_interval_analysis(df, top_10_user_ids)
+    
+    print("checking deciles")
+    avgs_per_decile(sorted_users, df, EMOTIONS)
         
     print("checking statistical significance of means...")
     comparison_results = []
