@@ -61,9 +61,7 @@ def create_graph(users, posts):
     
     return incel_graph
 
-tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
-
-def split_text(text, max_length):
+def split_text(text, max_length, tokenizer):
     # Tokenize the text and get the tokens
     tokens = tokenizer.tokenize(text)
     
@@ -78,14 +76,15 @@ def split_text(text, max_length):
     return chunks
 
 def get_weighted_mean_emotion_score(chunks, model):
-    total_length = sum(len(chunk) for chunk in chunks)
+    total_length = sum(len(chunk.split()) for chunk in chunks)  # Use split to approximate word count
     
     # Initialize a dictionary for emotion labels with initial score of 0
     weighted_scores = {emotion: 0 for emotion in EMOTIONS}
 
     for chunk in chunks:
         chunk_scores = model(chunk)  # This returns a list of dictionaries for each chunk
-        weight = len(tokenizer.tokenize(chunk)) / total_length  # Update the weight calculation based on tokens
+        chunk_length = len(chunk.split())  # Using split to approximate word count for weighting
+        weight = chunk_length / total_length
 
         for score_dict in chunk_scores[0]:  # chunk_scores[0] contains our list of dictionaries
             emotion = score_dict['label']
@@ -95,16 +94,36 @@ def get_weighted_mean_emotion_score(chunks, model):
 
     return weighted_scores
 
+def get_weighted_mean_sentiment_score(chunks, model):
+    total_length = sum(len(chunk) for chunk in chunks)
+    
+    # Initialize a dictionary for sentiment labels with an initial score of 0
+    weighted_scores = {'negative': 0, 'neutral': 0, 'positive': 0}
+
+    for chunk in chunks:
+        chunk_scores = model(chunk)  # This returns a list of dictionaries for each chunk
+        chunk_length = len(chunk.split())  # Using split to approximate tokenization for weighting
+        weight = chunk_length / total_length
+
+        for score_dict in chunk_scores[0]:  # Assuming chunk_scores[0] contains our sentiment scores
+            sentiment = score_dict['label']
+            score = score_dict['score']
+            if sentiment in weighted_scores:
+                weighted_scores[sentiment] += score * weight
+
+    return weighted_scores
+
 def calc_emotions(posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     goemotions = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
+    tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
 
     rows = []
 
     for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
-        post_chunks = split_text(post['text_content'], 512)
+        post_chunks = split_text(post['text_content'], 512, tokenizer)
         post_mean_score = get_weighted_mean_emotion_score(post_chunks, goemotions)
         
         # Calculate post length in words
@@ -116,7 +135,7 @@ def calc_emotions(posts):
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
-            comment_chunks = split_text(comment['text_content'], 512)
+            comment_chunks = split_text(comment['text_content'], 512, tokenizer)
             comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, goemotions)
 
             # Calculate comment length in words
@@ -135,13 +154,14 @@ def calc_sentiments(posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     cardiffRoberta = pipeline(task="text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None, device=device)
+    tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-sentiment-latest")
 
     rows = []
 
     for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
-        post_chunks = split_text(post['text_content'], 512)
-        post_sentiment = get_weighted_mean_emotion_score(post_chunks, cardiffRoberta)
+        post_chunks = split_text(post['text_content'], 512, tokenizer)
+        post_sentiment = get_weighted_mean_sentiment_score(post_chunks, cardiffRoberta)
         
         # Calculate post length in words
         post_length = len(post['text_content'].split())
@@ -152,8 +172,8 @@ def calc_sentiments(posts):
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
-            comment_chunks = split_text(comment['text_content'], 512)
-            comment_sentiment = get_weighted_mean_emotion_score(comment_chunks, cardiffRoberta)
+            comment_chunks = split_text(comment['text_content'], 512, tokenizer)
+            comment_sentiment = get_weighted_mean_sentiment_score(comment_chunks, cardiffRoberta)
 
             # Calculate comment length in words
             comment_length = len(comment['text_content'].split())
