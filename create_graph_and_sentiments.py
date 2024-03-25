@@ -107,24 +107,30 @@ def calc_sentiments(posts):
         post_chunks = split_text(post['text_content'], 512)
         post_mean_score = get_weighted_mean_emotion_score(post_chunks, roberta)
         
+        # Calculate post length in words
+        post_length = len(post['text_content'].split())
+        
         # Ensure the order of scores matches the order of emotions
         post_scores = [post_mean_score[emotion] for emotion in EMOTIONS]
-        rows.append([post['post_id'], post['user_id']] + post_scores)
+        rows.append([post['post_id'], post['user_id'], post_length] + post_scores)
 
         # Analyze sentiments in the comments
         for comment in post['comments']:
             comment_chunks = split_text(comment['text_content'], 512)
             comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, roberta)
 
+            # Calculate comment length in words
+            comment_length = len(comment['text_content'].split())
+
             # Ensure the order of scores matches the order of emotions
             comment_scores = [comment_mean_score[emotion] for emotion in EMOTIONS]
-            rows.append([comment['post_id'], comment['user_id']] + comment_scores)
+            rows.append([comment['post_id'], comment['user_id'], comment_length] + comment_scores)
 
-    # Save to CSV TODO: maybe add post length column?
-    columns = ['post_id', 'user_id'] + [emotion for emotion in EMOTIONS]
+    # Save to CSV with post length column
+    columns = ['post_id', 'user_id', 'post_length'] + [emotion for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis.csv', index=False)
-    
+
 if __name__ == "__main__":
     # Load the JSON data
     print("loading users")
