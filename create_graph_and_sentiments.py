@@ -133,6 +133,7 @@ def calc_emotions(posts):
 
 def calc_sentiments(posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     cardiffRoberta = pipeline(task="text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None, device=device)
 
     rows = []
@@ -185,5 +186,8 @@ if __name__ == "__main__":
         print("Calculating graph...")
         incel_graph = create_graph(users,posts)
                 
-    print("calculating sentiments")
+    print("calculating sentiments (cardiffnlp roberta)")
+    calc_sentiments(posts)
+    
+    print("calculating emotions (goemotions roberta)")
     calc_sentiments(posts)
