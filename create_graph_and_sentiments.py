@@ -95,17 +95,17 @@ def get_weighted_mean_emotion_score(chunks, model):
 
     return weighted_scores
 
-def calc_sentiments(posts):
+def calc_emotions(posts):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    roberta = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
+    goemotions = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
 
     rows = []
 
     for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
         post_chunks = split_text(post['text_content'], 512)
-        post_mean_score = get_weighted_mean_emotion_score(post_chunks, roberta)
+        post_mean_score = get_weighted_mean_emotion_score(post_chunks, goemotions)
         
         # Calculate post length in words
         post_length = len(post['text_content'].split())
@@ -117,7 +117,7 @@ def calc_sentiments(posts):
         # Analyze sentiments in the comments
         for comment in post['comments']:
             comment_chunks = split_text(comment['text_content'], 512)
-            comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, roberta)
+            comment_mean_score = get_weighted_mean_emotion_score(comment_chunks, goemotions)
 
             # Calculate comment length in words
             comment_length = len(comment['text_content'].split())
@@ -129,7 +129,42 @@ def calc_sentiments(posts):
     # Save to CSV with post length column
     columns = ['post_id', 'user_id', 'post_length'] + [emotion for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
-    df.to_csv('sentiment_analysis.csv', index=False)
+    df.to_csv('sentiment_analysis_goemotions.csv', index=False)
+
+def calc_sentiments(posts):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    cardiffRoberta = pipeline(task="text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None, device=device)
+
+    rows = []
+
+    for post in tqdm(posts, desc="Processing posts"):
+        # Split and analyze the post's text sentiment
+        post_chunks = split_text(post['text_content'], 512)
+        post_sentiment = get_weighted_mean_emotion_score(post_chunks, cardiffRoberta)
+        
+        # Calculate post length in words
+        post_length = len(post['text_content'].split())
+        
+        # Ensure the order of scores matches the sentiment categories
+        post_scores = [post_sentiment.get(sentiment, 0) for sentiment in ['negative', 'neutral', 'positive']]
+        rows.append([post['post_id'], post['user_id'], post_length] + post_scores)
+
+        # Analyze sentiments in the comments
+        for comment in post['comments']:
+            comment_chunks = split_text(comment['text_content'], 512)
+            comment_sentiment = get_weighted_mean_emotion_score(comment_chunks, cardiffRoberta)
+
+            # Calculate comment length in words
+            comment_length = len(comment['text_content'].split())
+
+            # Ensure the order of scores matches the sentiment categories
+            comment_scores = [comment_sentiment.get(sentiment, 0) for sentiment in ['negative', 'neutral', 'positive']]
+            rows.append([comment['post_id'], comment['user_id'], comment_length] + comment_scores)
+
+    # Save to CSV with post length column
+    columns = ['post_id', 'user_id', 'post_length', 'negative', 'neutral', 'positive']
+    df = pd.DataFrame(rows, columns=columns)
+    df.to_csv('sentiment_analysis_cardiff.csv', index=False)
 
 if __name__ == "__main__":
     # Load the JSON data
