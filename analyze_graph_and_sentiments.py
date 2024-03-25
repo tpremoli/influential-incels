@@ -96,6 +96,9 @@ if __name__ == "__main__":
     # Apply the PageRank algorithm
     print("applying pagerank algorithm to graph")
     pagerank = nx.pagerank(incel_graph, weight='weight')
+    # betweenness = nx.betweenness_centrality(incel_graph, weight='weight')
+    # eigen = nx.eigenvector_centrality(incel_graph, weight='weight')
+    # closeness = nx.closeness_centrality(incel_graph, distance='weight')
 
     # Sort users by their PageRank scores
     print("sorting users by pagerank scores")
