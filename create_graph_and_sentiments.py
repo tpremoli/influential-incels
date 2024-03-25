@@ -113,9 +113,7 @@ def get_weighted_mean_sentiment_score(chunks, model):
 
     return weighted_scores
 
-def calc_emotions(posts):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+def calc_emotions(posts, device):
     goemotions = pipeline(task="text-classification", model="SamLowe/roberta-base-go_emotions", top_k=None, device=device)
     tokenizer = AutoTokenizer.from_pretrained("SamLowe/roberta-base-go_emotions")
 
@@ -149,11 +147,13 @@ def calc_emotions(posts):
     columns = ['post_id', 'user_id', 'post_length'] + [emotion for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis_goemotions.csv', index=False)
-
-def calc_sentiments(posts):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    cardiffRoberta = pipeline(task="text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None, device=device)
+    del goemotions
+    del tokenizer
+    del rows
+
+def calc_sentiments(posts, device):
+    cardiff_roberta = pipeline(task="text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None, device=device)
     tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-sentiment-latest")
 
     rows = []
@@ -161,7 +161,7 @@ def calc_sentiments(posts):
     for post in tqdm(posts, desc="Processing posts"):
         # Split and analyze the post's text sentiment
         post_chunks = split_text(post['text_content'], 512, tokenizer)
-        post_sentiment = get_weighted_mean_sentiment_score(post_chunks, cardiffRoberta)
+        post_sentiment = get_weighted_mean_sentiment_score(post_chunks, cardiff_roberta)
         
         # Calculate post length in words
         post_length = len(post['text_content'].split())
@@ -173,7 +173,7 @@ def calc_sentiments(posts):
         # Analyze sentiments in the comments
         for comment in post['comments']:
             comment_chunks = split_text(comment['text_content'], 512, tokenizer)
-            comment_sentiment = get_weighted_mean_sentiment_score(comment_chunks, cardiffRoberta)
+            comment_sentiment = get_weighted_mean_sentiment_score(comment_chunks, cardiff_roberta)
 
             # Calculate comment length in words
             comment_length = len(comment['text_content'].split())
@@ -186,6 +186,10 @@ def calc_sentiments(posts):
     columns = ['post_id', 'user_id', 'post_length', 'negative', 'neutral', 'positive']
     df = pd.DataFrame(rows, columns=columns)
     df.to_csv('sentiment_analysis_cardiff.csv', index=False)
+    
+    del cardiff_roberta
+    del tokenizer
+    del rows
 
 if __name__ == "__main__":
     # Load the JSON data
@@ -205,9 +209,11 @@ if __name__ == "__main__":
     else:
         print("Calculating graph...")
         incel_graph = create_graph(users,posts)
+        
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 
     print("calculating sentiments (cardiffnlp roberta)")
-    calc_sentiments(posts)
+    calc_sentiments(posts,device)
     
     print("calculating emotions (goemotions roberta)")
-    calc_sentiments(posts)
+    calc_emotions(posts, device)
