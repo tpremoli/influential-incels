@@ -8,18 +8,21 @@ import re
 from html import unescape
 
 
+lightbox_text = "{\n\t\t\t\t\"lightbox_close\": \"Close\",\n\t\t\t\t\"lightbox_next\": \"Next\",\n\t\t\t\t\"lightbox_previous\": \"Previous\",\n\t\t\t\t\"lightbox_error\": \"The requested content cannot be loaded. Please try again later.\",\n\t\t\t\t\"lightbox_start_slideshow\": \"Start slideshow\",\n\t\t\t\t\"lightbox_stop_slideshow\": \"Stop slideshow\",\n\t\t\t\t\"lightbox_full_screen\": \"Full screen\",\n\t\t\t\t\"lightbox_thumbnails\": \"Thumbnails\",\n\t\t\t\t\"lightbox_download\": \"Download\",\n\t\t\t\t\"lightbox_share\": \"Share\",\n\t\t\t\t\"lightbox_zoom\": \"Zoom\",\n\t\t\t\t\"lightbox_new_window\": \"New window\",\n\t\t\t\t\"lightbox_toggle_sidebar\": \"Toggle sidebar\"\n\t\t\t}"
+
 def extract_and_remove_quotes(html_text):
     # Initialize an empty list to hold all reply_to_post_ids
     reply_to_post_ids = []
 
     # Find all blockquotes and extract reply_to_post_id
-    blockquotes = re.findall(
-        r'<blockquote[^>]+data-source="post: (\d+)"[^>]*>', html_text, flags=re.DOTALL)
+    blockquotes = re.findall(r'<blockquote[^>]+data-source="post: (\d+)"[^>]*>', html_text, flags=re.DOTALL)
     reply_to_post_ids.extend(blockquotes)
 
     # Remove all occurrences of blockquote elements
-    cleaned_html = re.sub(r'<blockquote.*?/blockquote>',
-                          '', html_text, flags=re.DOTALL)
+    cleaned_html = re.sub(r'<blockquote.*?/blockquote>', '', html_text, flags=re.DOTALL)
+
+    # Remove the lightbox text
+    cleaned_html = cleaned_html.replace(lightbox_text, '').strip()
 
     # Convert HTML entities back to characters, if necessary
     cleaned_html = unescape(cleaned_html)
