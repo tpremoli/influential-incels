@@ -26,7 +26,8 @@ def create_graph(users, posts):
         incel_graph.add_node(user['user_id'], username=user['username'])
 
     # Define weights for different types of interactions
-    mention_quote_weight = 1.0
+    mention_weight = 1.0
+    quote_weight = 1.0
     general_comment_weight = 0.5
 
     # Add edges (interactions) to the graph
@@ -40,7 +41,7 @@ def create_graph(users, posts):
             if comment['mentioned_users']:
                 has_direct_interaction = True
                 for mentioned_user in comment['mentioned_users']:
-                    incel_graph.add_edge(comment['user_id'], mentioned_user, weight=mention_quote_weight)
+                    incel_graph.add_edge(comment['user_id'], mentioned_user, weight=mention_weight)
 
             # If the comment quotes other posts
             if comment['quoted_posts']:
@@ -49,7 +50,7 @@ def create_graph(users, posts):
                     # Find the original poster and add an edge
                     original_poster = next((item['user_id'] for item in posts if item['post_id'] == quoted_post), None)
                     if original_poster:
-                        incel_graph.add_edge(comment['user_id'], original_poster, weight=mention_quote_weight)
+                        incel_graph.add_edge(comment['user_id'], original_poster, weight=quote_weight)
 
             # General comment interaction with the original post's author
             if not has_direct_interaction and comment['user_id'] != post['user_id']:
