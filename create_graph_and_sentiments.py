@@ -185,7 +185,7 @@ def calc_sentiments(posts, device):
     # Save to CSV with post length column
     columns = ['post_id', 'user_id', 'post_length', 'negative', 'neutral', 'positive']
     df = pd.DataFrame(rows, columns=columns)
-    df.to_csv('sentiment_analysis_cardiff.csv', index=False)
+    df.to_csv('sentiment_analysis_goemotions.csv', index=False)
     
     del cardiff_roberta
     del tokenizer

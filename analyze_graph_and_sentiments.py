@@ -110,7 +110,7 @@ if __name__ == "__main__":
         print(f"User ID: {user_id}, Score: {score}")
 
     print("loading sentiment files...")
-    df = pd.read_csv('sentiment_analysis.csv')
+    df = pd.read_csv('sentiment_analysis_goemotionsd.csv')
     
     # Clamp emotion values
     for emotion in EMOTIONS:
