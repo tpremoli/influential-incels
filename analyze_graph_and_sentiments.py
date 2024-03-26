@@ -66,14 +66,24 @@ def avgs_per_decile(sorted_users, df, emotions):
 
     # Convert the list of averages to a DataFrame for easier plotting
     decile_averages_df = pd.DataFrame(decile_averages)
-    
+
+    # Calculate the overall average for each emotion
+    overall_averages = decile_averages_df.mean().sort_values()
+
+    # Identify the 14 emotions with the lowest overall average
+    excluded_emotions = overall_averages.head(14).index.tolist()
+        
     print("plotting")
-    # Plotting
+    # Generate a colormap with enough unique colors
     plt.figure(figsize=(16, 8))
-    for emotion in emotions:
-        if emotion == "neutral": continue
-        plt.plot(range(1, 11), decile_averages_df[emotion], marker='o', label=emotion)
+    colormap = plt.cm.get_cmap('tab20', len(emotions) - len(excluded_emotions))
     
+    for idx, emotion in enumerate(emotions):
+        if emotion in excluded_emotions or emotion == "neutral":
+            continue
+        color = colormap(idx)
+        plt.plot(range(1, 11), decile_averages_df[emotion], marker='o', label=emotion, color=color)
+        
     plt.title('Average Sentiment Scores by Decile')
     plt.xlabel('Decile')
     plt.ylabel('Average Score')
@@ -110,7 +120,7 @@ if __name__ == "__main__":
         print(f"User ID: {user_id}, Score: {score}")
 
     print("loading sentiment files...")
-    df = pd.read_csv('sentiment_analysis_goemotionsd.csv')
+    df = pd.read_csv('sentiment_analysis_goemotions.csv')
     
     # Clamp emotion values
     for emotion in EMOTIONS:
@@ -155,7 +165,7 @@ if __name__ == "__main__":
     comparison_results = []
 
     for emotion in EMOTIONS:
-        # Extract the emotion scores for top 5 users and other users
+        # Extract the emotion scores for top 10 users and other users
         top_10_scores = df[df['user_id'].isin(top_10_user_ids)][emotion]
         other_users_scores = df[~df['user_id'].isin(top_10_user_ids)][emotion]
 
