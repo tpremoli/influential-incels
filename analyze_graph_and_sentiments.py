@@ -13,34 +13,6 @@ EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance
             "curiosity", "love", "optimism", "pride", "relief", "nervousness",
             "remorse", "sadness", "realization", "surprise", "neutral"]
 
-def conf_interval_analysis(df, top_10_user_ids, n_bootstraps=1000):
-    # Initialize dictionaries to hold the bootstrap results
-    top_10_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
-    other_users_bootstrap_means = {emotion: [] for emotion in EMOTIONS}
-
-    # Bootstrap for top 10 users
-    for _ in range(n_bootstraps):
-        sample = df[df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
-        for emotion in EMOTIONS:
-            top_10_bootstrap_means[emotion].append(sample[emotion].mean())
-
-    # Bootstrap for other users
-    for _ in range(n_bootstraps):
-        sample = df[~df['user_id'].isin(top_10_user_ids)].sample(frac=1, replace=True)
-        for emotion in EMOTIONS:
-            other_users_bootstrap_means[emotion].append(sample[emotion].mean())
-
-    print("95% confidence intervals for the average sentiment scores:")
-    # Calculate the confidence intervals
-    confidence_intervals = {
-        'Top 10 Users': {emotion: np.percentile(top_10_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS},
-        'Other Users': {emotion: np.percentile(other_users_bootstrap_means[emotion], [5, 95]) for emotion in EMOTIONS}
-    }
-
-    # Display the confidence intervals
-    for emotion in EMOTIONS:
-        print(f"{emotion}:\nTop 10 Users: {confidence_intervals['Top 10 Users'][emotion]}\nOther Users: {confidence_intervals['Other Users'][emotion]}\n")
-
 def avgs_per_decile(sorted_users, df, emotions):
     # Determine the number of users in each decile
     num_users = len(sorted_users)
@@ -122,10 +94,15 @@ if __name__ == "__main__":
     print("loading sentiment files...")
     df = pd.read_csv('sentiment_analysis_goemotions.csv')
     
-    # Clamp emotion values
-    for emotion in EMOTIONS:
-        df[emotion] = df[emotion].apply(lambda x: 0 if x < 0.5 else 1)
-            
+    # drop any rows where all emotions are 0
+    print("Dropping zero rows")
+    df = df[(df[EMOTIONS] != 0).any(axis=1)]
+    
+    # Keep the top 1 emotion values and set the rest to 0
+    print("keeping top 1 emotion values")
+    top_3_mask = df[EMOTIONS].apply(lambda x: x >= x.nlargest(1).min(), axis=1)
+    df[EMOTIONS] = df[EMOTIONS].where(top_3_mask, other=0)    
+    
     # Get the top 10 users based on PageRank
     top_10_user_ids = [user[0] for user in sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:10]]
 
@@ -154,10 +131,15 @@ if __name__ == "__main__":
 
     print("\nVariance in sentiment scores across all users:")
     print(emotion_variance)
-        
-    # print("running confidence interval analysis...")
-    # conf_interval_analysis(df, top_10_user_ids)
     
+    # Assume there's a 'post_length' column that represents the length of each post
+    print("Calculating average post length...")
+    top_10_avg_post_length = df[df['user_id'].isin(top_10_user_ids)]['post_length'].mean()
+    other_users_avg_post_length = df[~df['user_id'].isin(top_10_user_ids)]['post_length'].mean()
+
+    print(f"Average post length for top 10 users: {top_10_avg_post_length}")
+    print(f"Average post length for other users: {other_users_avg_post_length}")
+        
     print("checking deciles")
     avgs_per_decile(sorted_users, df, EMOTIONS)
         
