@@ -1,0 +1,115 @@
+Loading graph from file...
+applying pagerank algorithm to graph
+sorting users by pagerank scores
+Network analysis complete. Top 10 users:
+User ID: 48324, Score: 0.00863511312279977
+User ID: 1672, Score: 0.008523429030502861
+User ID: 45911, Score: 0.007381542100555419
+User ID: 43957, Score: 0.0058280675345403
+User ID: 47777, Score: 0.005752785715489228
+loading sentiment files...
+Dropping zero rows
+keeping top 3 emotion values
+Average sentiment comparison between top 5 users and other users:
+                Top 5 Users  Other Users  Difference
+admiration          0.102194     0.106972   -0.004778
+amusement           0.032313     0.047545   -0.015232
+approval            0.706423     0.628152    0.078271
+caring              0.027847     0.038562   -0.010714
+anger               0.105740     0.143806   -0.038066
+annoyance           0.618416     0.574238    0.044178
+disappointment      0.117431     0.128351   -0.010920
+disapproval         0.236044     0.260869   -0.024825
+confusion           0.128596     0.140761   -0.012166
+desire              0.030474     0.036028   -0.005554
+excitement          0.027716     0.028510   -0.000794
+gratitude           0.013792     0.018265   -0.004473
+joy                 0.037567     0.050076   -0.012508
+disgust             0.058978     0.064020   -0.005042
+embarrassment       0.004072     0.004023    0.000049
+fear                0.015368     0.014447    0.000921
+grief               0.002627     0.003343   -0.000715
+curiosity           0.107579     0.123357   -0.015777
+love                0.019834     0.021024   -0.001190
+optimism            0.068961     0.092232   -0.023271
+pride               0.000919     0.000734    0.000185
+relief              0.003941     0.003397    0.000544
+nervousness         0.004466     0.004940   -0.000474
+remorse             0.003678     0.006174   -0.002496
+sadness             0.064101     0.066626   -0.002525
+realization         0.446867     0.375305    0.071563
+surprise            0.014055     0.018247   -0.004192
+
+Variance in sentiment scores across all users:
+admiration        0.095445
+amusement         0.044976
+approval          0.233125
+caring            0.036853
+anger             0.122518
+annoyance         0.244342
+disappointment    0.111695
+disapproval       0.192551
+confusion         0.120752
+desire            0.034615
+excitement        0.027680
+gratitude         0.017835
+joy               0.047316
+disgust           0.059824
+embarrassment     0.004007
+fear              0.014259
+grief             0.003316
+curiosity         0.107874
+love              0.020557
+optimism          0.083301
+pride             0.000738
+relief            0.003397
+nervousness       0.004905
+remorse           0.006080
+sadness           0.062138
+realization       0.234849
+surprise          0.017824
+dtype: float64
+Calculating average post length...
+Average post length for top 5 users: 19.23170891895442
+Average post length for other users: 25.707871760465494
+checking deciles
+looking at decile 0
+looking at decile 1
+looking at decile 2
+looking at decile 3
+looking at decile 4
+looking at decile 5
+looking at decile 6
+looking at decile 7
+looking at decile 8
+looking at decile 9
+plotting
+checking statistical significance of means...
+           Emotion  Top 5 Users  Other Users  Difference  Is Significant
+0       admiration      0.102194     0.106972   -0.004778           False
+1        amusement      0.032313     0.047545   -0.015232            True
+2         approval      0.706423     0.628152    0.078271            True
+3           caring      0.027847     0.038562   -0.010714            True
+4            anger      0.105740     0.143806   -0.038066            True
+5        annoyance      0.618416     0.574238    0.044178            True
+6   disappointment      0.117431     0.128351   -0.010920            True
+7      disapproval      0.236044     0.260869   -0.024825            True
+8        confusion      0.128596     0.140761   -0.012166            True
+9           desire      0.030474     0.036028   -0.005554            True
+10      excitement      0.027716     0.028510   -0.000794           False
+11       gratitude      0.013792     0.018265   -0.004473            True
+12             joy      0.037567     0.050076   -0.012508            True
+13         disgust      0.058978     0.064020   -0.005042           False
+14   embarrassment      0.004072     0.004023    0.000049           False
+15            fear      0.015368     0.014447    0.000921           False
+16           grief      0.002627     0.003343   -0.000715           False
+17       curiosity      0.107579     0.123357   -0.015777            True
+18            love      0.019834     0.021024   -0.001190           False
+19        optimism      0.068961     0.092232   -0.023271            True
+20           pride      0.000919     0.000734    0.000185           False
+21          relief      0.003941     0.003397    0.000544           False
+22     nervousness      0.004466     0.004940   -0.000474           False
+23         remorse      0.003678     0.006174   -0.002496            True
+24         sadness      0.064101     0.066626   -0.002525           False
+25     realization      0.446867     0.375305    0.071563            True
+26        surprise      0.014055     0.018247   -0.004192            True
