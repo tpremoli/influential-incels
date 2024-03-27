@@ -59,7 +59,7 @@ def avgs_per_decile(sorted_users, df, emotions):
     plt.title('Average Sentiment Scores by Decile')
     plt.xlabel('Decile')
     plt.ylabel('Average Score')
-    plt.xticks(range(1, 11), [f'{i*10}%' for i in range(1, 11)])
+    plt.xticks(range(1, 11), [f'{i*5}%' for i in range(1, 11)])
     
     # Adjust the legend position
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -86,9 +86,9 @@ if __name__ == "__main__":
     print("sorting users by pagerank scores")
     sorted_users = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)
 
-    # Display the top 10 influential users
-    print("Network analysis complete. Top 10 users:")
-    for user_id, score in sorted_users[:10]:
+    # Display the top 5 influential users
+    print("Network analysis complete. Top 5 users:")
+    for user_id, score in sorted_users[:5]:
         print(f"User ID: {user_id}, Score: {score}")
 
     print("loading sentiment files...")
@@ -99,29 +99,29 @@ if __name__ == "__main__":
     df = df[(df[EMOTIONS] != 0).any(axis=1)]
     
     # drop the neutral column
-    # df = df.drop(columns=['neutral'])
-    # EMOTIONS.remove('neutral')
+    df = df.drop(columns=['neutral'])
+    EMOTIONS.remove('neutral')
     
     # Keep the top 3 emotion values and set the rest to 0
     print("keeping top 3 emotion values")
     top_3_mask = df[EMOTIONS].apply(lambda x: x >= x.nlargest(3).min(), axis=1)
     df[EMOTIONS] = top_3_mask.astype(int)  # Convert boolean mask to integer (1 for True, 0 for False)
     
-    # Get the top 10 users based on PageRank
-    top_10_user_ids = [user[0] for user in sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:10]]
+    # Get the top 5 users based on PageRank
+    top_5_user_ids = [user[0] for user in sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:5]]
 
-    # Calculate the average sentiment scores for the top 10 users
-    top_10_avg = df[df['user_id'].isin(top_10_user_ids)][EMOTIONS].mean()
+    # Calculate the average sentiment scores for the top 5 users
+    top_5_avg = df[df['user_id'].isin(top_5_user_ids)][EMOTIONS].mean()
 
     # Calculate the average sentiment scores for all other users
-    other_users_avg = df[~df['user_id'].isin(top_10_user_ids)][EMOTIONS].mean()
+    other_users_avg = df[~df['user_id'].isin(top_5_user_ids)][EMOTIONS].mean()
 
     # Calculate the differences
-    differences = top_10_avg - other_users_avg
+    differences = top_5_avg - other_users_avg
 
     # Combine all the data into one DataFrame
     comparison = pd.DataFrame({
-        'Top 10 Users': top_10_avg,
+        'Top 5 Users': top_5_avg,
         'Other Users': other_users_avg,
         'Difference': differences
     })
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     emotion_variance = df[EMOTIONS].var()
 
     # Display the results
-    print("Average sentiment comparison between top 10 users and other users:")
+    print("Average sentiment comparison between top 5 users and other users:")
     print(comparison)
 
     print("\nVariance in sentiment scores across all users:")
@@ -138,38 +138,35 @@ if __name__ == "__main__":
     
     # Assume there's a 'post_length' column that represents the length of each post
     print("Calculating average post length...")
-    top_10_avg_post_length = df[df['user_id'].isin(top_10_user_ids)]['post_length'].mean()
-    other_users_avg_post_length = df[~df['user_id'].isin(top_10_user_ids)]['post_length'].mean()
+    top_5_avg_post_length = df[df['user_id'].isin(top_5_user_ids)]['post_length'].mean()
+    other_users_avg_post_length = df[~df['user_id'].isin(top_5_user_ids)]['post_length'].mean()
 
-    print(f"Average post length for top 10 users: {top_10_avg_post_length}")
+    print(f"Average post length for top 5 users: {top_5_avg_post_length}")
     print(f"Average post length for other users: {other_users_avg_post_length}")
-        
-    print("checking deciles")
-    avgs_per_decile(sorted_users, df, EMOTIONS)
         
     print("checking statistical significance of means...")
     comparison_results = []
 
     for emotion in EMOTIONS:
-        # Extract the emotion scores for top 10 users and other users
-        top_10_scores = df[df['user_id'].isin(top_10_user_ids)][emotion]
-        other_users_scores = df[~df['user_id'].isin(top_10_user_ids)][emotion]
+        # Extract the emotion scores for top 5 users and other users
+        top_5_scores = df[df['user_id'].isin(top_5_user_ids)][emotion]
+        other_users_scores = df[~df['user_id'].isin(top_5_user_ids)][emotion]
 
         # Calculate the averages
-        top_10_avg = top_10_scores.mean()
+        top_5_avg = top_5_scores.mean()
         other_users_avg = other_users_scores.mean()
 
         # Calculate the difference
-        difference = top_10_avg - other_users_avg
+        difference = top_5_avg - other_users_avg
 
         # Perform Levene's test for equality of variances
-        levene_test = stats.levene(top_10_scores, other_users_scores)
+        levene_test = stats.levene(top_5_scores, other_users_scores)
 
         # Perform the t-test based on the variances
         if levene_test.pvalue < 0.05:
-            t_test_result = stats.ttest_ind(top_10_scores, other_users_scores, equal_var=False)
+            t_test_result = stats.ttest_ind(top_5_scores, other_users_scores, equal_var=False)
         else:
-            t_test_result = stats.ttest_ind(top_10_scores, other_users_scores, equal_var=True)
+            t_test_result = stats.ttest_ind(top_5_scores, other_users_scores, equal_var=True)
 
         # Determine if the result is statistically significant (using p < 0.05 as the criterion)
         is_significant = t_test_result.pvalue < 0.05
@@ -177,7 +174,7 @@ if __name__ == "__main__":
         # Append the results to the DataFrame
         comparison_results.append({
             'Emotion': emotion,
-            'Top 10 Users': top_10_avg,
+            'Top 5 Users': top_5_avg,
             'Other Users': other_users_avg,
             'Difference': difference,
             'Is Significant': is_significant
