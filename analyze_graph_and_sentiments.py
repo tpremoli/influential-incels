@@ -11,7 +11,7 @@ EMOTIONS = ["admiration", "amusement", "approval", "caring", "anger", "annoyance
             "disappointment", "disapproval", "confusion", "desire", "excitement",
             "gratitude", "joy", "disgust", "embarrassment", "fear", "grief",
             "curiosity", "love", "optimism", "pride", "relief", "nervousness",
-            "remorse", "sadness", "realization", "surprise", "neutral"]
+            "remorse", "sadness", "realization", "surprise",  "neutral"]
 
 def avgs_per_decile(sorted_users, df, emotions):
     # Determine the number of users in each decile
@@ -42,13 +42,13 @@ def avgs_per_decile(sorted_users, df, emotions):
     # Calculate the overall average for each emotion
     overall_averages = decile_averages_df.mean().sort_values()
 
-    # Identify the 14 emotions with the lowest overall average
-    excluded_emotions = overall_averages.head(14).index.tolist()
+    # Identify the 10 emotions with the lowest overall average
+    excluded_emotions = overall_averages.head(10).index.tolist()
         
     print("plotting")
     # Generate a colormap with enough unique colors
     plt.figure(figsize=(16, 8))
-    colormap = plt.cm.get_cmap('tab20', len(emotions) - len(excluded_emotions))
+    colormap = plt.cm.get_cmap('tab20b', 10)
     
     for idx, emotion in enumerate(emotions):
         if emotion in excluded_emotions or emotion == "neutral":
@@ -98,10 +98,14 @@ if __name__ == "__main__":
     print("Dropping zero rows")
     df = df[(df[EMOTIONS] != 0).any(axis=1)]
     
-    # Keep the top 1 emotion values and set the rest to 0
-    print("keeping top 1 emotion values")
-    top_3_mask = df[EMOTIONS].apply(lambda x: x >= x.nlargest(1).min(), axis=1)
-    df[EMOTIONS] = df[EMOTIONS].where(top_3_mask, other=0)    
+    # drop the neutral column
+    # df = df.drop(columns=['neutral'])
+    # EMOTIONS.remove('neutral')
+    
+    # Keep the top 3 emotion values and set the rest to 0
+    print("keeping top 3 emotion values")
+    top_3_mask = df[EMOTIONS].apply(lambda x: x >= x.nlargest(3).min(), axis=1)
+    df[EMOTIONS] = top_3_mask.astype(int)  # Convert boolean mask to integer (1 for True, 0 for False)
     
     # Get the top 10 users based on PageRank
     top_10_user_ids = [user[0] for user in sorted(pagerank.items(), key=lambda x: x[1], reverse=True)[:10]]
