@@ -1,7 +1,7 @@
 Loading graph from file...
 applying pagerank algorithm to graph
 sorting users by pagerank scores
-Network analysis complete. Top 10 users:
+Network analysis complete. Top 5 users:
 User ID: 48324, Score: 0.00863511312279977
 User ID: 1672, Score: 0.008523429030502861
 User ID: 45911, Score: 0.007381542100555419

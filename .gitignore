@@ -5,3 +5,4 @@ posts.json
 cleaned_posts.json
 sentiment_analysis_cardiff.csv
 sentiment_analysis_goemotions.csv
+forum_graph.pkl
