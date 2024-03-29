@@ -1,8 +1,4 @@
 __pycache__
-output.json
-unique_users.json
-posts.json
-cleaned_posts.json
-sentiment_analysis_cardiff.csv
-sentiment_analysis_goemotions.csv
+scraped_data/*
+text_analysis/*
 forum_graph.pkl

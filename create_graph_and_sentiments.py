@@ -147,7 +147,7 @@ def calc_emotions(posts, device):
     # Save to CSV with post length column
     columns = ['post_id', 'user_id', 'post_length'] + [emotion for emotion in EMOTIONS]
     df = pd.DataFrame(rows, columns=columns)
-    df.to_csv('sentiment_analysis_goemotions.csv', index=False)
+    df.to_csv('text_analysis/sentiment_analysis_goemotions.csv', index=False)
     
     del goemotions
     del tokenizer
@@ -186,7 +186,7 @@ def calc_sentiments(posts, device):
     # Save to CSV with post length column
     columns = ['post_id', 'user_id', 'post_length', 'negative', 'neutral', 'positive']
     df = pd.DataFrame(rows, columns=columns)
-    df.to_csv('sentiment_analysis_goemotions.csv', index=False)
+    df.to_csv('text_analysis/sentiment_analysis_goemotions.csv', index=False)
     
     del cardiff_roberta
     del tokenizer
@@ -195,11 +195,11 @@ def calc_sentiments(posts, device):
 if __name__ == "__main__":
     # Load the JSON data
     print("loading users")
-    with open('unique_users.json', encoding='utf-8') as f:
+    with open('scraped_data/unique_users.json', encoding='utf-8') as f:
         users = json.load(f)
 
     print("loading posts")
-    with open('posts.json', encoding='utf-8') as f:
+    with open('scraped_data/posts.json', encoding='utf-8') as f:
         posts = json.load(f)
     
     # check if forum_graph.pkl exists, if so load it, else calculate it

@@ -17,7 +17,7 @@ class IncelsForumScraperPipeline:
 
 class UserPipeline:
     def open_spider(self, spider):
-        self.file = open('unique_users.json', 'wb')  # Open in binary mode for JsonItemExporter
+        self.file = open('scraped_data/unique_users.json', 'wb')  # Open in binary mode for JsonItemExporter
         self.exporter = JsonItemExporter(self.file, encoding='utf-8', ensure_ascii=False)
         self.exporter.start_exporting()
         self.users_seen = set()

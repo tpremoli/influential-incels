@@ -92,7 +92,7 @@ if __name__ == "__main__":
         print(f"User ID: {user_id}, Score: {score}")
 
     print("loading sentiment files...")
-    df = pd.read_csv('sentiment_analysis_goemotions.csv')
+    df = pd.read_csv('text_analysis/sentiment_analysis_goemotions.csv')
     
     # drop any rows where all emotions are 0
     print("Dropping zero rows")

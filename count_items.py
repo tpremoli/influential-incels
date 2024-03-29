@@ -10,7 +10,7 @@ import pandas as pd
 if __name__ == "__main__":
     # Load the JSON data
     print("loading users")
-    with open('unique_users.json', encoding='utf-8') as f:
+    with open('scraped_data/unique_users.json', encoding='utf-8') as f:
         users = json.load(f)
         
     print("counting users...")
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     del users
     
     print("loading posts")
-    with open('posts.json', encoding='utf-8') as f:
+    with open('scraped_data/posts.json', encoding='utf-8') as f:
         posts = json.load(f)
 
     total_threads = 0
