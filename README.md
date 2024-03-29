@@ -29,7 +29,8 @@ To run the final analysis, you can run the "analyze_graph_and_sentiments.py" scr
 the analysis as explained in the report. The output will be printed to the console.
 The outputs used in the report are stored in "results.txt"
 
-Some extra scripts are included, which are kept for the sake of completeness.
+Some extra scripts are included in the "extra_utils" folder which are kept for the sake of completeness.
 - "lightbox_cleanup.py" cleans up the posts.json file to remove lightbox links.
     These links are placeholders for images, but as we are not interested in images, we remove them.
+    The posts.json file included with this submission already has the cleaned data.
 - "count_items.py" counts the number of unique users, comments, threads, and overall posts.
