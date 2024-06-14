@@ -21,7 +21,8 @@ packages installed:
 - numpy
 - tqdm
 - torch
-    The outputs are placed in "forum_graph.pkl" for the graph, and the sentiment files go 
+
+The outputs are placed in "forum_graph.pkl" for the graph, and the sentiment files go 
     in "text_analysis/sentiment_analysis_cardiff.csv" for simple sentiments, and 
     "text_analysis/sentiment_analysis_goemotions.csv" for the emotion classification.
 
